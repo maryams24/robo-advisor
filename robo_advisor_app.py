@@ -9,8 +9,8 @@ import numpy as np
 
 FILE_NAME = 'data.csv' 
 TARGET_COLUMN = 'Occupation' 
-# OPTIMIZATION: Reduced sample size to speed up initial training
-NUM_SAMPLES = 10000 
+# OPTIMIZATION: Drastically reduced sample size for faster startup
+NUM_SAMPLES = 5000 
 
 PROFILE_ADVICE = {
     'Professional': {
@@ -118,9 +118,10 @@ def train_and_cache_model(df, features, target_column):
     )
 
     deep_learning_model = MLPClassifier(
-        hidden_layer_sizes=(100, 50, 25), 
-        # OPTIMIZATION: Reduced iterations to speed up training
-        max_iter=300, 
+        # OPTIMIZED: Simplified architecture for faster training
+        hidden_layer_sizes=(50, 25, 10), 
+        # OPTIMIZED: Reduced iterations
+        max_iter=200, 
         solver='adam', 
         random_state=42
     )
