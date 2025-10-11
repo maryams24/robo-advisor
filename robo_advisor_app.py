@@ -1,14 +1,10 @@
 import streamlit as st
 import pandas as pd
-# Note: These scikit-learn modules are used for the classification model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import numpy as np
-import joblib 
-# 'requests' and 'streamlit_lottie' are external dependencies 
-# listed in requirements.txt
 import requests
 from streamlit_lottie import st_lottie
 
@@ -26,13 +22,21 @@ def load_lottieurl(url: str):
         return None
 
 @st.cache_resource
-def load_lottie_success():
-    """Caches the Lottie animation JSON to ensure fast and reliable loading."""
-    # Using a professional checkmark/success animation for analysis completion
-    LOTTIE_SUCCESS_URL = "https://lottie.host/1709c31b-7221-4f31-893f-c179c375681c/o9c6J127c5.json"
-    return load_lottieurl(LOTTIE_SUCCESS_URL)
+def load_lottie_animations():
+    """Caches both the loading and success Lottie animations."""
+    
+    # 1. Loading/Analysis Animation (used while calculating)
+    LOTTIE_ANALYSIS_URL = "https://lottie.host/17498c19-75a0-43a7-89b3-ec3199859a0f/94178xN69F.json"
+    analysis_animation = load_lottieurl(LOTTIE_ANALYSIS_URL)
 
-lottie_success = load_lottie_success()
+    # 2. Success/Checkmark Animation (used after results are displayed)
+    # A professional checkmark animation
+    LOTTIE_SUCCESS_URL = "https://lottie.host/6f02a3a5-1d0e-4340-9b4e-862d6d03d4c8/Gf03u69YF8.json"
+    success_animation = load_lottieurl(LOTTIE_SUCCESS_URL)
+
+    return analysis_animation, success_animation
+
+lottie_analysis, lottie_success = load_lottie_animations()
 
 # --- 1. APP CONFIGURATION AND STYLING 🎨 ---
 
@@ -180,7 +184,14 @@ with st.form("advisor_form", clear_on_submit=False):
 
 if submitted:
     
-    with st.spinner("Analyzing your financial profile..."):
+    # 5a. Show Lottie analysis animation during calculation
+    if lottie_analysis:
+        # Using columns to center the animation and make it prominent
+        anim_col1, anim_col2, anim_col3 = st.columns([1, 2, 1])
+        with anim_col2:
+            st_lottie(lottie_analysis, height=200, key="analysis_animation", speed=1, loop=True)
+    
+    with st.spinner("Analyzing your financial profile and generating strategy..."):
         
         user_data = pd.DataFrame([{
             'Income': income,
@@ -201,7 +212,10 @@ if submitted:
             
             advice_map = FINANCIAL_ADVICE.get(predicted_occupation, FINANCIAL_ADVICE['Other'])
 
-            st.subheader("Your Predicted Financial Profile & Strategy")
+            # Add a clear separator or markdown to indicate the transition from analysis to results
+            st.markdown("---")
+            
+            st.subheader("✅ Strategy Generation Complete!")
             st.markdown(f"**We've analyzed your inputs and predict your profile aligns closest with a:** <span style='color:#1a73e8; font-weight:bold;'>{predicted_occupation}</span>", unsafe_allow_html=True)
             st.success(f"**Recommended Strategy:** {advice_map['title']}")
             
@@ -225,12 +239,11 @@ if submitted:
             st.subheader("Confidence Scores Visualized")
             st.bar_chart(prob_df, x='Predicted Occupation', y='Confidence')
             
+            # CELEBRATION: Show Lottie Success/Checkmark animation after the results are fully displayed
+            if lottie_success:
+                st_lottie(lottie_success, height=100, key="final_success_animation", loop=False, speed=1)
+            
         except Exception as e:
             st.error(f"Prediction error: {e}")
             st.warning("Please check your input values and try again.")
         
-    # Lottie animation for success (only runs if the JSON was loaded successfully)
-    if lottie_success:
-        st_lottie(lottie_success, height=150, key="success_animation", speed=1)
-    
-    st.success("Analysis Complete! Your personalized strategy is ready.")
