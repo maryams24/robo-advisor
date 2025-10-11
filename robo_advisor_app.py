@@ -15,25 +15,25 @@ PROFILE_ADVICE = {
     'Professional': {
         'title': "Targeted Savings & High-Yield Investment Strategy",
         'advice': "Your income is stable, but high discretionary spending (Eating Out/Entertainment) is likely eroding savings. **Reduce Eating Out by 15%** and investigate automated investing (e.g., 401k match, Roth IRA) to meet your savings goals.",
-        'color': '#2196F3', # Blue/Growth
+        'color': '#2196F3',
         'profile': 'Stable Professional Saver' 
     },
     'Self_Employed': {
         'title': "Variable Income Stabilization & Tax Saving Strategy",
         'advice': "Your income is variable. Your top priority is building a **larger cash reserve (12 months)** to smooth monthly fluctuations. Focus on reducing 'Miscellaneous' spending and set aside funds quarterly for taxes.",
-        'color': '#FF9800', # Orange/Caution
+        'color': '#FF9800',
         'profile': 'Entrepreneurial Saver Profile' 
     },
     'Student': {
         'title': "Essential Spending Optimization & Income Generation Strategy",
         'advice': "Your budget is tight. **Groceries and Rent are the biggest levers.** Explore cheaper alternatives for groceries (e.g., meal prepping) and consider a part-time income source to increase your 'Disposable Income' for savings.",
-        'color': '#F44336', # Red/Urgent
+        'color': '#F44336',
         'profile': 'Optimized Student Saver' 
     },
     'Retired': {
         'title': "Fixed Income Preservation & Healthcare Strategy",
         'advice': "Your focus should be on **preserving capital and minimizing healthcare costs**. Review your Utilities for potential efficiency gains (e.g., energy audit). Ensure your withdrawal strategy minimizes tax liability.",
-        'color': '#4CAF50', # Green/Preservation
+        'color': '#4CAF50',
         'profile': 'Conservative Retired Saver' 
     }
 }
@@ -41,7 +41,6 @@ PROFILE_ADVICE = {
 
 @st.cache_data(show_spinner=False)
 def load_and_clean_data(file_name):
-    """Loads, cleans, and prepares the Budgeting data for classification."""
     try:
         df = pd.read_csv(file_name)
     except FileNotFoundError:
@@ -118,8 +117,8 @@ def train_and_cache_model(df, features, target_column):
     )
 
     deep_learning_model = MLPClassifier(
-        hidden_layer_sizes=(75, 30), 
-        max_iter=300, 
+        hidden_layer_sizes=(100, 50, 25), 
+        max_iter=500, 
         solver='adam', 
         random_state=42
     )
@@ -165,6 +164,11 @@ st.markdown("""
             background-color: white;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        /* Custom styling for sliders/inputs */
+        .stSlider label {
+            font-weight: bold;
+            color: #333;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -172,27 +176,28 @@ st.title("🧠 Robo Advisor for Savings and Budgeting (Deep Learning Powered)")
 st.write("Enter your monthly budget to get personalized advice on where to cut spending and maximize your savings rate.")
 
 with st.form("savings_advisor_form", clear_on_submit=False):
-    st.subheader("Input Your Monthly Income and Spending")
+    st.subheader("Input Your Financial Data")
     
     col_l, col_r = st.columns(2)
     
     with col_l:
-        st.header("Income & Demographics")
-        income = st.number_input("Annual Income ($):", min_value=10000, value=75000, step=5000, key='income')
-        age = st.number_input("Age (Years):", min_value=18, max_value=80, value=30, key='age')
-        dependents = st.number_input("Dependents:", min_value=0, max_value=10, value=0, key='dependents')
-        city_tier = st.selectbox("City Cost of Living Tier:", city_options, index=0 if len(city_options) > 0 else 0, key='city_tier')
+        st.header("👤 Income & Demographics")
+        income = st.number_input("💰 Annual Income ($):", min_value=10000, value=75000, step=5000, key='income')
+        # Using st.slider for better interaction
+        age = st.slider("🎂 Age (Years):", min_value=18, max_value=80, value=30, key='age')
+        dependents = st.slider("👨‍👩‍👧 Dependents:", min_value=0, max_value=10, value=0, key='dependents')
+        city_tier = st.selectbox("🏙️ City Cost of Living Tier:", city_options, index=0 if len(city_options) > 0 else 0, key='city_tier')
     
     with col_r:
-        st.header("Monthly Spending")
-        rent = st.number_input("Rent/Mortgage ($/Month):", min_value=0, value=1500, step=100, key='rent')
-        groceries = st.number_input("Groceries ($/Month):", min_value=0, value=500, step=50, key='groceries')
-        transport = st.number_input("Transport ($/Month):", min_value=0, value=250, step=25, key='transport')
-        eating_out = st.number_input("Eating Out ($/Month):", min_value=0, value=300, step=50, key='eating_out')
-        entertainment = st.number_input("Entertainment ($/Month):", min_value=0, value=200, step=25, key='entertainment')
-        utilities = st.number_input("Utilities ($/Month):", min_value=0, value=150, step=10, key='utilities')
-        healthcare = st.number_input("Healthcare ($/Month):", min_value=0, value=100, step=10, key='healthcare')
-        education = st.number_input("Education/Self-Improvement ($/Month):", min_value=0, value=50, step=10, key='education')
+        st.header("🧾 Monthly Spending")
+        rent = st.number_input("🏠 Rent/Mortgage ($/Month):", min_value=0, value=1500, step=100, key='rent')
+        groceries = st.number_input("🛒 Groceries ($/Month):", min_value=0, value=500, step=50, key='groceries')
+        transport = st.number_input("🚗 Transport ($/Month):", min_value=0, value=250, step=25, key='transport')
+        eating_out = st.number_input("🍕 Eating Out ($/Month):", min_value=0, value=300, step=50, key='eating_out')
+        entertainment = st.number_input("🎬 Entertainment ($/Month):", min_value=0, value=200, step=25, key='entertainment')
+        utilities = st.number_input("💡 Utilities ($/Month):", min_value=0, value=150, step=10, key='utilities')
+        healthcare = st.number_input("⚕️ Healthcare ($/Month):", min_value=0, value=100, step=10, key='healthcare')
+        education = st.number_input("📚 Education/Self-Improvement ($/Month):", min_value=0, value=50, step=10, key='education')
         
     st.markdown("---")
     submitted = st.form_submit_button("Get Personalized Savings Plan")
@@ -246,9 +251,10 @@ if submitted:
                 """, unsafe_allow_html=True)
 
             with col_summary:
-                st.success(f"**Recommended Strategy: {advice_map['title']}**")
+                st.success(f"**Savings & Investment Action Plan: {advice_map['title']}**")
                 st.markdown(f"""
                     <div class="container" style='border-left: 5px solid {advice_map['color']};'>
+                        <p style='font-size:18px; font-weight: bold; color: #333;'>Your Personalized Financial Directive:</p>
                         <p style='font-size:16px;'>{advice_map['advice']}</p>
                     </div>
                 """, unsafe_allow_html=True)
