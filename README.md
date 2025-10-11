@@ -1,8 +1,11 @@
 **Robo-Advisor for personal finance**
 
+This project is a prototype of an AI-driven Robo Advisor for Personal Finance, implemented as a web application using Streamlit and the power of Deep Learning (MLPClassifier).
 
-This project is a prototype of an AI-driven robo-advisor implemented as a web application using Streamlit and Scikit-learn. It analyzes a user's financial and demographic profile to predict their most probable financial life stage (Occupation) and delivers highly personalized, strategic financial advice.
-The core function is to leverage machine learning to move beyond generic advice. By classifying the user into a specific profile (e.g., Student, Professional, Retired), the app provides strategies tailored to that group's typical risk tolerance, time horizon, and income stability. Please find the webapp link below :
+It analyzes a user's detailed income and monthly spending habits (rent, groceries, entertainment, etc.) to predict their most probable Financial Profile (e.g., Stable Professional Saver, Optimized Student Saver).
+
+The core function is to leverage machine learning to move beyond generic advice. By classifying the user into a specific profile, the app delivers a highly personalized, strategic Savings & Investment Action Plan tailored to that group's typical spending patterns, savings potential, and financial goals.
+Please find the webapp link below :
 
 _**https://robo-advisor-cgfmcagc5wnkyubbsyl9fy.streamlit.app/**
 _
