@@ -6,6 +6,20 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import numpy as np
 import joblib 
+import requests
+from streamlit_lottie import st_lottie
+
+# --- LOTTIE ANIMATION HELPER ---
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+# Using a professional checkmark animation for successful analysis
+LOTTIE_SUCCESS_URL = "https://lottie.host/1709c31b-7221-4f31-893f-c179c375681c/o9c6J127c5.json"
+lottie_success = load_lottieurl(LOTTIE_SUCCESS_URL)
+
 
 # --- 1. APP CONFIGURATION AND STYLING 🎨 ---
 
@@ -150,7 +164,6 @@ with st.form("advisor_form", clear_on_submit=False):
 
 if submitted:
     
-    # Use st.spinner to show processing feedback while the model runs
     with st.spinner("Analyzing your financial profile..."):
         
         user_data = pd.DataFrame([{
@@ -200,4 +213,8 @@ if submitted:
             st.error(f"Prediction error: {e}")
             st.warning("Please check your input values and try again.")
         
-    st.success("Analysis Complete!")
+    # Lottie animation for success
+    if lottie_success:
+        st_lottie(lottie_success, height=150, key="success_animation")
+    
+    st.success("Analysis Complete! Your personalized strategy is ready.")
