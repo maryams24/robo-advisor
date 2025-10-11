@@ -187,7 +187,6 @@ if submitted:
             probabilities = model.predict_proba(user_data)[0]
             
             # Probability of Stability (Class 0)
-            # The model is trained on loan_status where 0 = paid loan (stable)
             stability_prob = probabilities[model.classes_ == 0][0] 
             # Probability of Risk (Class 1)
             risk_prob = probabilities[model.classes_ == 1][0]
@@ -211,7 +210,7 @@ if submitted:
 
             st.markdown("---")
             
-            st.subheader("✅ Personalized Financial Stability Analysis")
+            st.subheader("✅ Personalized Financial Strategy Analysis") # Changed title
             
             # Display Prediction
             col_risk, col_summary = st.columns([1, 2])
@@ -219,10 +218,10 @@ if submitted:
             with col_risk:
                 st.markdown(f"""
                     <div class="container" style='border: 3px solid {color}; text-align:center;'>
-                        <p style='font-size:18px; color: #333; font-weight: bold;'>Financial Stability Score</p>
+                        <p style='font-size:18px; color: #333; font-weight: bold;'>Predicted Strategy Confidence</p>
                         <h1 style='font-size:40px; color: {color};'>{stability_prob * 100:.1f}%</h1>
-                        <p>(Confidence in stability: {stability_prob * 100:.1f}%)</p>
-                        <p>(Confidence in risk: {risk_prob * 100:.1f}%)</p>
+                        <p>(Confidence in **Low Risk Profile**: {stability_prob * 100:.1f}%)</p>
+                        <p>(Confidence in **High Risk Profile**: {risk_prob * 100:.1f}%)</p>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -244,7 +243,24 @@ if submitted:
             st.metric(label="Annual Debt Amount", 
                       value=f"${loan_amnt:,.0f}")
             
+            # --- UPDATED: Confidence Graph Labels ---
+            st.subheader("Model Confidence Breakdown: Profile Prediction")
+            
+            # Create DataFrame for the chart
+            prob_df = pd.DataFrame({
+                # Labels are now clearer and tied to the strategy/profile
+                'Predicted Profile Type': ['Low Risk/Stable Profile', 'High Risk/Risky Profile'], 
+                'Confidence': [stability_prob, risk_prob]
+            })
+            
+            st.bar_chart(prob_df, x='Predicted Profile Type', y='Confidence')
+            # --- END UPDATED ---
+            
             st.success("Analysis Complete!")
+            
+            # --- ADDED: Balloons Animation ---
+            st.balloons()
+            # --- END ADDED ---
             
         except Exception as e:
             st.error(f"Prediction error: Could not process input. Please ensure all number fields are valid. Detailed error: {e}")
