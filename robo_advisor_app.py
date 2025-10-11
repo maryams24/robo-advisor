@@ -55,7 +55,7 @@ def load_and_clean_data(file_name):
         st.stop()
         
     # Standardize column names
-    df.columns = df.columns.str.lower()
+    df.columns = df.columns.str.lower().str.strip()
     
     # 1. Feature Selection & Target Definition
     # Features for predicting spending profile
@@ -65,8 +65,27 @@ def load_and_clean_data(file_name):
         'entertainment', 'utilities', 'healthcare', 'education'
     ]
     
+    # --- ERROR CHECKING ADDED HERE ---
+    required_cols = FEATURES + [TARGET_COLUMN.lower()]
+    missing_cols = [col for col in required_cols if col not in df.columns]
+
+    if missing_cols:
+        st.error(f"""
+            **Data Error: Missing Columns Detected!**
+            
+            The current model requires the budget/spending data from **`data.csv`**. 
+            It appears you may be loading a different file, as these critical columns are missing:
+            
+            Missing Columns: **{', '.join(missing_cols)}**
+            
+            Please ensure the **`data.csv`** file is accessible to the code.
+        """)
+        st.stop()
+    # ---------------------------------
+    
     # Keep only required columns and the target
-    df = df[FEATURES + [TARGET_COLUMN]].copy()
+    df = df[FEATURES + [TARGET_COLUMN.lower()]].copy()
+    df.columns = FEATURES + [TARGET_COLUMN] # Restore original capitalization for model training consistency
     
     # Filter out categories not covered in advice map for cleaner model output
     df = df[df[TARGET_COLUMN].str.strip().isin(PROFILE_ADVICE.keys())]
@@ -75,7 +94,8 @@ def load_and_clean_data(file_name):
     df = df.dropna()
     
     # Limit rows to speed up demonstration
-    df = df.sample(n=NUM_SAMPLES, random_state=42)
+    if len(df) > NUM_SAMPLES:
+        df = df.sample(n=NUM_SAMPLES, random_state=42)
     
     return df, FEATURES
 
@@ -138,12 +158,14 @@ try:
     data_df, model_features = load_and_clean_data(FILE_NAME)
     model, model_features = train_and_cache_model(data_df, model_features, TARGET_COLUMN)
 except Exception as e:
+    # This catch block is for general errors, the specific column check happens inside load_and_clean_data
     st.error(f"Failed to load or train model: {e}")
     st.stop()
     
 # Get unique categorical values for input boxes
 city_options = data_df['city_tier'].unique().tolist()
-occupation_options = data_df['Occupation'].unique().tolist()
+# NOTE: Removed occupation_options as it was unused and only city_options is needed for input
+# occupation_options = data_df['Occupation'].unique().tolist()
 
 # --- 3. APP CONFIGURATION AND STYLING ---
 
@@ -187,7 +209,7 @@ with st.form("savings_advisor_form", clear_on_submit=False):
         income = st.number_input("Annual Income ($):", min_value=10000, value=75000, step=5000, key='income')
         age = st.number_input("Age (Years):", min_value=18, max_value=80, value=30, key='age')
         dependents = st.number_input("Dependents:", min_value=0, max_value=10, value=0, key='dependents')
-        city_tier = st.selectbox("City Cost of Living Tier:", city_options, index=1, key='city_tier')
+        city_tier = st.selectbox("City Cost of Living Tier:", city_options, index=0 if len(city_options) > 0 else 0, key='city_tier')
     
     with col_r:
         st.header("Monthly Spending")
