@@ -145,7 +145,7 @@ except Exception as e:
 city_options = data_df['city_tier'].unique().tolist()
 
 
-st.set_page_config(page_title="Robo Advisor for Savings and Budgeting", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Robo Advisor for Personal Finance and Budgeting", page_icon="📈", layout="wide")
 
 st.markdown("""
     <style>
@@ -175,7 +175,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 Robo Advisor for Savings and Budgeting (Deep Learning Powered)")
+st.title("📈 Robo Advisor for Personal finance and Budgeting")
 st.write("Enter your monthly budget to get personalized advice on where to cut spending and maximize your savings rate.")
 
 with st.form("savings_advisor_form", clear_on_submit=False):
@@ -298,3 +298,4 @@ if submitted:
         except Exception as e:
             st.error(f"Prediction error: Could not process input. Please ensure all number fields are valid. Detailed error: {e}")
             
+
