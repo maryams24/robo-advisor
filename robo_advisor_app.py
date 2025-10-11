@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-# Importing the Deep Learning component: MLPClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
@@ -8,14 +7,10 @@ from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 import numpy as np
 
-# --- 1. DATA LOADING AND PREPARATION (Using data.csv for budgeting) ---
-
 FILE_NAME = 'data.csv' 
-# TARGET: Predicts the user's Occupation (as a proxy for spending profile)
 TARGET_COLUMN = 'Occupation' 
 NUM_SAMPLES = 20000 
 
-# Define advice mapped to the categories (Occupation/Profile)
 PROFILE_ADVICE = {
     'Professional': {
         'title': "Targeted Savings & High-Yield Investment Strategy",
@@ -48,24 +43,19 @@ PROFILE_ADVICE = {
 def load_and_clean_data(file_name):
     """Loads, cleans, and prepares the Budgeting data for classification."""
     try:
-        # NOTE: Using the data.csv file as planned for the savings/budget model
         df = pd.read_csv(file_name)
     except FileNotFoundError:
         st.error(f"Error: Data file '{file_name}' not found. Please upload it or ensure the name is correct.")
         st.stop()
         
-    # Standardize column names
     df.columns = df.columns.str.lower().str.strip()
     
-    # 1. Feature Selection & Target Definition
-    # Features for predicting spending profile
     FEATURES = [
         'income', 'age', 'dependents', 'city_tier', 
         'rent', 'groceries', 'transport', 'eating_out', 
         'entertainment', 'utilities', 'healthcare', 'education'
     ]
     
-    # --- ERROR CHECKING ADDED HERE ---
     required_cols = FEATURES + [TARGET_COLUMN.lower()]
     missing_cols = [col for col in required_cols if col not in df.columns]
 
@@ -81,32 +71,26 @@ def load_and_clean_data(file_name):
             Please ensure the **`data.csv`** file is accessible to the code.
         """)
         st.stop()
-    # ---------------------------------
     
-    # Keep only required columns and the target
     df = df[FEATURES + [TARGET_COLUMN.lower()]].copy()
-    df.columns = FEATURES + [TARGET_COLUMN] # Restore original capitalization for model training consistency
+    df.columns = FEATURES + [TARGET_COLUMN] 
     
-    # Filter out categories not covered in advice map for cleaner model output
     df = df[df[TARGET_COLUMN].str.strip().isin(PROFILE_ADVICE.keys())]
     
-    # 2. Basic Cleaning and Imputation
     df = df.dropna()
     
-    # Limit rows to speed up demonstration
     if len(df) > NUM_SAMPLES:
         df = df.sample(n=NUM_SAMPLES, random_state=42)
     
     return df, FEATURES
 
-# --- 2. MODEL TRAINING AND CACHING (DEEP LEARNING MODEL) ---
+
 @st.cache_resource
 def train_and_cache_model(df, features, target_column):
     
     X = df[features]
     y = df[target_column]
 
-    # Define feature types 
     numerical_features = [
         'income', 'age', 'dependents', 'rent', 'groceries', 
         'transport', 'eating_out', 'entertainment', 
@@ -115,7 +99,6 @@ def train_and_cache_model(df, features, target_column):
     
     categorical_features = ['city_tier']
     
-    # Create Preprocessing Pipelines
     numerical_pipeline = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='mean')), 
         ('scaler', StandardScaler())
@@ -126,7 +109,6 @@ def train_and_cache_model(df, features, target_column):
         ('onehot', OneHotEncoder(handle_unknown='ignore'))
     ])
     
-    # Combine Pipelines
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numerical_pipeline, numerical_features), 
@@ -135,39 +117,31 @@ def train_and_cache_model(df, features, target_column):
         remainder='passthrough'
     )
 
-    # Replaced RandomForestClassifier with a Deep Learning MLPClassifier (Neural Network)
-    # hidden_layer_sizes=(100, 50) means two hidden layers with 100 and 50 nodes respectively
     deep_learning_model = MLPClassifier(
-        hidden_layer_sizes=(100, 50), 
-        max_iter=500, # Increased iterations for convergence
+        hidden_layer_sizes=(75, 30), 
+        max_iter=300, 
         solver='adam', 
         random_state=42
     )
 
     model = Pipeline(steps=[
         ('preprocessor', preprocessor),
-        ('classifier', deep_learning_model) # Now using the Neural Network
+        ('classifier', deep_learning_model) 
     ])
 
     model.fit(X, y)
 
     return model, features
 
-# Load and prepare the data
 try:
     data_df, model_features = load_and_clean_data(FILE_NAME)
     model, model_features = train_and_cache_model(data_df, model_features, TARGET_COLUMN)
 except Exception as e:
-    # This catch block is for general errors, the specific column check happens inside load_and_clean_data
     st.error(f"Failed to load or train model: {e}")
     st.stop()
     
-# Get unique categorical values for input boxes
 city_options = data_df['city_tier'].unique().tolist()
-# NOTE: Removed occupation_options as it was unused and only city_options is needed for input
-# occupation_options = data_df['Occupation'].unique().tolist()
 
-# --- 3. APP CONFIGURATION AND STYLING ---
 
 st.set_page_config(page_title="Robo Advisor for Savings and Budgeting", page_icon="📈", layout="wide")
 
@@ -175,7 +149,7 @@ st.markdown("""
     <style>
         .main {background-color: #f0f4f8; padding: 20px;}
         .stButton>button {
-            background-color: #4CAF50; /* Green for Savings */
+            background-color: #4CAF50; 
             color: white;
             font-size: 18px;
             font-weight: bold;
@@ -197,8 +171,6 @@ st.markdown("""
 st.title("🧠 Robo Advisor for Savings and Budgeting (Deep Learning Powered)")
 st.write("Enter your monthly budget to get personalized advice on where to cut spending and maximize your savings rate.")
 
-# --- 4. USER INPUT FORM (BUDGETING FIELDS) ---
-
 with st.form("savings_advisor_form", clear_on_submit=False):
     st.subheader("Input Your Monthly Income and Spending")
     
@@ -213,7 +185,6 @@ with st.form("savings_advisor_form", clear_on_submit=False):
     
     with col_r:
         st.header("Monthly Spending")
-        # All inputs are converted to monthly estimates from annual data features
         rent = st.number_input("Rent/Mortgage ($/Month):", min_value=0, value=1500, step=100, key='rent')
         groceries = st.number_input("Groceries ($/Month):", min_value=0, value=500, step=50, key='groceries')
         transport = st.number_input("Transport ($/Month):", min_value=0, value=250, step=25, key='transport')
@@ -227,11 +198,8 @@ with st.form("savings_advisor_form", clear_on_submit=False):
     submitted = st.form_submit_button("Get Personalized Savings Plan")
 
 
-# --- 5. PREDICTION AND DISPLAY ---
 if submitted:
     
-    # Calculate approximate annual values for the model input
-    # Note: The model was trained on annual data, so we convert monthly inputs back to annual estimates
     user_data = pd.DataFrame([{
         'income': income,
         'age': age,
@@ -247,29 +215,23 @@ if submitted:
         'education': education * 12
     }])
     
-    # Ensure columns match the model's feature order
     user_data = user_data[model_features]
 
     with st.spinner("Analyzing spending profile using Neural Network and generating savings strategy..."):
         
         try:
-            # Predict probability of belonging to each class (multi-class: 4 occupations/profiles)
             probabilities = model.predict_proba(user_data)[0]
             
-            # Get the predicted profile (Occupation label)
             predicted_occupation = model.classes_[np.argmax(probabilities)]
             
-            # Get the advice map for the predicted profile
             advice_map = PROFILE_ADVICE.get(predicted_occupation, PROFILE_ADVICE['Professional'])
             
             st.markdown("---")
             
             st.subheader("✅ Personalized Savings and Budget Analysis")
             
-            # Display Prediction
             col_pred, col_summary = st.columns([1, 2])
             
-            # Calculate Monthly Net Disposable Income (simplified, excluding taxes)
             total_monthly_spending = rent + groceries + transport + eating_out + entertainment + utilities + healthcare + education
             monthly_income = income / 12
             potential_monthly_savings = monthly_income - total_monthly_spending
@@ -307,10 +269,8 @@ if submitted:
                           value=f"{((potential_monthly_savings / monthly_income) * 100):.1f}%")
 
             
-            # --- Multi-Bar Confidence Graph ---
             st.subheader("Model Confidence Breakdown: All Predicted Profiles")
             
-            # Map model classes (Occupation) to simplified profile names
             profile_names = [PROFILE_ADVICE[c]['profile'] for c in model.classes_]
             
             prob_df = pd.DataFrame({
@@ -318,17 +278,13 @@ if submitted:
                 'Confidence': probabilities
             })
             
-            # Sort for better visualization and ensure all intents are visible
             prob_df = prob_df.set_index('Predicted Profile').sort_values('Confidence', ascending=False)
             
             st.bar_chart(prob_df, y='Confidence')
-            # --- END Multi-Bar Graph ---
             
             st.success("Analysis Complete!")
             
-            # --- Balloons Animation ---
             st.balloons()
-            # --- END Balloons Animation ---
             
         except Exception as e:
             st.error(f"Prediction error: Could not process input. Please ensure all number fields are valid. Detailed error: {e}")
