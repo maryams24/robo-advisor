@@ -9,17 +9,23 @@ import joblib
 import requests
 from streamlit_lottie import st_lottie
 
-# --- LOTTIE ANIMATION HELPER ---
+# --- LOTTIE ANIMATION HELPERS ---
+
 def load_lottieurl(url: str):
+    """Fetches Lottie JSON data from a URL."""
     r = requests.get(url)
     if r.status_code != 200:
         return None
     return r.json()
 
-# Using a professional checkmark animation for successful analysis
-LOTTIE_SUCCESS_URL = "https://lottie.host/1709c31b-7221-4f31-893f-c179c375681c/o9c6J127c5.json"
-lottie_success = load_lottieurl(LOTTIE_SUCCESS_URL)
+@st.cache_resource
+def load_lottie_success():
+    """Caches the Lottie animation JSON to ensure fast and reliable loading."""
+    # Using a professional checkmark/success animation for analysis completion
+    LOTTIE_SUCCESS_URL = "https://lottie.host/1709c31b-7221-4f31-893f-c179c375681c/o9c6J127c5.json"
+    return load_lottieurl(LOTTIE_SUCCESS_URL)
 
+lottie_success = load_lottie_success()
 
 # --- 1. APP CONFIGURATION AND STYLING 🎨 ---
 
@@ -155,7 +161,8 @@ with st.form("advisor_form", clear_on_submit=False):
         desired_savings_percentage = st.slider("Desired Monthly Savings Percentage:", min_value=0.0, max_value=50.0, value=15.0, step=0.5, format="%.1f%%")
         
         disposable_income = income - (rent * 12) - (loan_repayment * 12)
-        st.metric("Estimated Annual Disposable Income:", f"$$ {disposable_income:,.2f}", help="This is used by the model for classification.")
+        # FIX APPLIED HERE: Changed f"$$ {..." to f"$ {..."
+        st.metric("Estimated Annual Disposable Income:", f"$ {disposable_income:,.2f}", help="This is used by the model for classification.")
         
     submitted = st.form_submit_button("Get Personalized Strategy")
 
@@ -213,8 +220,8 @@ if submitted:
             st.error(f"Prediction error: {e}")
             st.warning("Please check your input values and try again.")
         
-    # Lottie animation for success
+    # Lottie animation for success now correctly loaded via cache
     if lottie_success:
-        st_lottie(lottie_success, height=150, key="success_animation")
+        st_lottie(lottie_success, height=150, key="success_animation", speed=1)
     
     st.success("Analysis Complete! Your personalized strategy is ready.")
