@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+# Importing the Deep Learning component: MLPClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -9,7 +10,7 @@ import numpy as np
 
 # --- 1. DATA LOADING AND PREPARATION (Using data.csv for budgeting) ---
 
-FILE_NAME = 'data.csv' # Switched to the budgeting dataset
+FILE_NAME = 'data.csv' 
 # TARGET: Predicts the user's Occupation (as a proxy for spending profile)
 TARGET_COLUMN = 'Occupation' 
 NUM_SAMPLES = 20000 
@@ -47,6 +48,7 @@ PROFILE_ADVICE = {
 def load_and_clean_data(file_name):
     """Loads, cleans, and prepares the Budgeting data for classification."""
     try:
+        # NOTE: Using the data.csv file as planned for the savings/budget model
         df = pd.read_csv(file_name)
     except FileNotFoundError:
         st.error(f"Error: Data file '{file_name}' not found. Please upload it or ensure the name is correct.")
@@ -67,7 +69,7 @@ def load_and_clean_data(file_name):
     df = df[FEATURES + [TARGET_COLUMN]].copy()
     
     # Filter out categories not covered in advice map for cleaner model output
-    df = df[df[TARGET_COLUMN].isin(PROFILE_ADVICE.keys())]
+    df = df[df[TARGET_COLUMN].str.strip().isin(PROFILE_ADVICE.keys())]
     
     # 2. Basic Cleaning and Imputation
     df = df.dropna()
@@ -77,14 +79,14 @@ def load_and_clean_data(file_name):
     
     return df, FEATURES
 
-# --- 2. MODEL TRAINING AND CACHING ---
+# --- 2. MODEL TRAINING AND CACHING (DEEP LEARNING MODEL) ---
 @st.cache_resource
 def train_and_cache_model(df, features, target_column):
     
     X = df[features]
     y = df[target_column]
 
-    # Define feature types based on the new dataset
+    # Define feature types 
     numerical_features = [
         'income', 'age', 'dependents', 'rent', 'groceries', 
         'transport', 'eating_out', 'entertainment', 
@@ -113,10 +115,18 @@ def train_and_cache_model(df, features, target_column):
         remainder='passthrough'
     )
 
-    # Use a Classifier for multi-class prediction
+    # Replaced RandomForestClassifier with a Deep Learning MLPClassifier (Neural Network)
+    # hidden_layer_sizes=(100, 50) means two hidden layers with 100 and 50 nodes respectively
+    deep_learning_model = MLPClassifier(
+        hidden_layer_sizes=(100, 50), 
+        max_iter=500, # Increased iterations for convergence
+        solver='adam', 
+        random_state=42
+    )
+
     model = Pipeline(steps=[
         ('preprocessor', preprocessor),
-        ('classifier', RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42))
+        ('classifier', deep_learning_model) # Now using the Neural Network
     ])
 
     model.fit(X, y)
@@ -162,7 +172,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("💰 Robo Advisor for Savings and Budgeting")
+st.title("🧠 Robo Advisor for Savings and Budgeting (Deep Learning Powered)")
 st.write("Enter your monthly budget to get personalized advice on where to cut spending and maximize your savings rate.")
 
 # --- 4. USER INPUT FORM (BUDGETING FIELDS) ---
@@ -218,7 +228,7 @@ if submitted:
     # Ensure columns match the model's feature order
     user_data = user_data[model_features]
 
-    with st.spinner("Analyzing spending profile and generating savings strategy..."):
+    with st.spinner("Analyzing spending profile using Neural Network and generating savings strategy..."):
         
         try:
             # Predict probability of belonging to each class (multi-class: 4 occupations/profiles)
