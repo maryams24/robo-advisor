@@ -10,41 +10,47 @@ import numpy as np
 # --- 1. DATA LOADING AND PREPARATION (Using credit_risk_dataset.csv) ---
 
 FILE_NAME = 'credit_risk_dataset.csv'
-# NEW TARGET: Predicts the user's most likely Loan Intent (Multi-class: 6 categories)
+# TARGET: Predicts the user's most likely Loan Intent (Multi-class: 6 categories)
 TARGET_COLUMN = 'loan_intent' 
 NUM_SAMPLES = 20000 
 
-# Define advice mapped to the categories (Loan Intent)
+# Define advice mapped to the categories (Loan Intent) - Renamed to "Financial Profiles"
 INTENT_ADVICE = {
     'DEBTCONSOLIDATION': {
         'title': "Debt Restructuring & High-Interest Payoff Strategy",
         'advice': "Your profile aligns with needing to **consolidate existing high-interest debts**. Prioritize the 'snowball' or 'avalanche' method to clear these obligations quickly. Avoid taking on new debt until your Debt-to-Income (DTI) ratio is significantly lower.",
-        'color': '#F44336' # Red/Urgent
+        'color': '#F44336', # Red/Urgent
+        'profile': 'High-Debt Reduction Profile' # Simplified Name
     },
     'EDUCATION': {
         'title': "Future Income Maximization & Investment Strategy",
         'advice': "Your profile suggests investments in **education or self-improvement**. Focus on optimizing your future earning potential. Treat this debt as a strategic investment, but ensure you have a clear plan for repayment based on expected post-education income.",
-        'color': '#2196F3' # Blue/Growth
+        'color': '#2196F3', # Blue/Growth
+        'profile': 'Career Growth Profile' # Simplified Name
     },
     'HOMEIMPROVEMENT': {
         'title': "Asset Building & Large Purchase Budgeting Strategy",
         'advice': "Your profile indicates a need for **asset improvement**. Ensure your spending on home improvements doesn't compromise your emergency savings. Budget for contingency costs, as renovations often exceed initial estimates.",
-        'color': '#795548' # Brown/Stability
+        'color': '#795548', # Brown/Stability
+        'profile': 'Asset Optimization Profile' # Simplified Name
     },
     'MEDICAL': {
         'title': "Emergency Fund & Health Expense Protection Strategy",
         'advice': "Your profile highlights potential for **unexpected medical expenses**. Your top priority must be establishing an ample **emergency fund (8-12 months)**. Consider reviewing health insurance coverage to minimize future out-of-pocket costs.",
-        'color': '#FF9800' # Orange/Caution
+        'color': '#FF9800', # Orange/Caution
+        'profile': 'Protection Focus Profile' # Simplified Name
     },
     'PERSONAL': {
         'title': "Budget Review & Conservative Savings Strategy",
         'advice': "Your profile suggests generalized financial needs. Review your discretionary spending carefully. Allocate a balanced portfolio (e.g., 60/40 stocks/bonds) but **increase your monthly savings contributions** before any major new purchases.",
-        'color': '#9E9E9E' # Grey/Balanced
+        'color': '#9E9E9E', # Grey/Balanced
+        'profile': 'General Balance Profile' # Simplified Name
     },
     'VENTURE': {
         'title': "High-Risk, High-Reward Capital Strategy",
         'advice': "Your profile aligns with **entrepreneurial or high-risk investments**. While potential returns are high, isolate this capital from your personal finances. Ensure your core retirement and emergency funds are fully protected and liquid.",
-        'color': '#4CAF50' # Green/Aggressive
+        'color': '#4CAF50', # Green/Aggressive
+        'profile': 'Venture/Aggressive Growth Profile' # Simplified Name
     }
 }
 
@@ -61,12 +67,14 @@ def load_and_clean_data(file_name):
     # Standardize column names
     df.columns = df.columns.str.lower()
     
-    # 1. Feature Selection & Target Definition
-    # We are predicting loan_intent now. loan_status is a feature.
+    # 1. Feature Selection & Target Definition - ADDING MORE FEATURES
     FEATURES = [
         'person_age', 'person_income', 'person_home_ownership', 
-        'person_emp_length', 'loan_amnt', 
-        'loan_int_rate', 'loan_percent_income', 'loan_status' 
+        'person_emp_length', 'loan_amnt', 'loan_int_rate', 
+        'loan_percent_income', 'loan_status', # Existing
+        'loan_grade', # NEW FEATURE
+        'cb_person_default_on_file', # NEW FEATURE
+        'cb_person_cred_hist_length' # NEW FEATURE
     ]
     
     # Keep only required columns and the target
@@ -77,6 +85,7 @@ def load_and_clean_data(file_name):
     
     # Clean up and limit employee length to avoid outliers/noise (e.g., max 40 years)
     df['person_emp_length'] = df['person_emp_length'].clip(upper=40) 
+    df['cb_person_cred_hist_length'] = df['cb_person_cred_hist_length'].clip(upper=40)
     
     # Limit rows to speed up demonstration
     df = df.sample(n=NUM_SAMPLES, random_state=42)
@@ -91,12 +100,18 @@ def train_and_cache_model(df, features, target_column):
     y = df[target_column]
 
     # Define feature types based on the new dataset
-    numerical_features = ['person_age', 'person_income', 'person_emp_length', 
-                          'loan_amnt', 'loan_int_rate', 'loan_percent_income']
-    # loan_status is binary (0/1) but should be treated numerically for scaling
-    numerical_features.append('loan_status') 
+    numerical_features = [
+        'person_age', 'person_income', 'person_emp_length', 
+        'loan_amnt', 'loan_int_rate', 'loan_percent_income', 
+        'loan_status', # Binary, treated as numerical
+        'cb_person_cred_hist_length' # NEW NUMERICAL FEATURE
+    ]
     
-    categorical_features = ['person_home_ownership'] # loan_intent is now the target, so only home ownership remains categorical
+    categorical_features = [
+        'person_home_ownership', 
+        'loan_grade', # NEW CATEGORICAL FEATURE
+        'cb_person_default_on_file' # NEW CATEGORICAL FEATURE
+    ]
     
     # Create Preprocessing Pipelines
     numerical_pipeline = Pipeline(steps=[
@@ -139,10 +154,12 @@ except Exception as e:
     
 # Get unique categorical values for input boxes
 home_options = data_df['person_home_ownership'].unique().tolist()
+loan_grade_options = sorted(data_df['loan_grade'].unique().tolist()) # Sort A, B, C...
+default_on_file_options = data_df['cb_person_default_on_file'].unique().tolist()
 
 # --- 3. APP CONFIGURATION AND STYLING ---
 
-st.set_page_config(page_title="AI Robo-Advisor: Financial Intent Prediction", page_icon="🏦", layout="wide")
+st.set_page_config(page_title="Robo Advisor for Personal Finance", page_icon="🏦", layout="wide")
 
 st.markdown("""
     <style>
@@ -167,13 +184,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🏦 AI-Powered Financial Intent Advisor")
-st.write("We predict your primary financial intent and provide tailored advice based on your profile.")
+st.title("💰 Robo Advisor for Personal Finance")
+st.write("Get a personalized financial profile prediction and a tailored strategy based on your debt, income, and credit history.")
 
-# --- 4. USER INPUT FORM ---
+# --- 4. USER INPUT FORM (NOW WITH MORE FIELDS) ---
 
 with st.form("intent_advisor_form", clear_on_submit=False):
-    st.subheader("Your Profile & Debt Metrics")
+    st.subheader("Input Your Comprehensive Financial Profile")
     
     col1, col2, col3 = st.columns(3)
     
@@ -185,24 +202,29 @@ with st.form("intent_advisor_form", clear_on_submit=False):
     with col2:
         home_ownership = st.selectbox("Home Ownership Status:", home_options, index=1, key='home')
         loan_amnt = st.number_input("Total Debt Amount ($):", min_value=0, value=15000, step=1000, key='loan_amnt')
-        loan_int_rate = st.number_input("Interest Rate on Debt (%):", min_value=0.0, max_value=30.0, value=12.5, step=0.1, format="%.1f", key='int_rate')
+        loan_int_rate = st.number_input("Average Interest Rate on Debt (%):", min_value=0.0, max_value=30.0, value=12.5, step=0.1, format="%.1f", key='int_rate')
 
     with col3:
-        # A proxy for past stability/risk—0 for stable, 1 for risky/default. Default to stable.
+        # NEW INPUTS START HERE
+        loan_grade = st.selectbox("Current Debt Grade (A=Best, G=Worst):", loan_grade_options, index=0, key='loan_grade')
+        default_on_file = st.selectbox("Has Default Record on File?", default_on_file_options, index=1, key='default_on_file', format_func=lambda x: "Yes (Y)" if x == 'Y' else "No (N)")
+        cred_hist_length = st.number_input("Credit History Length (Years):", min_value=0, max_value=40, value=10, key='cred_hist_length')
+        # EXISTING INPUT
         loan_status = st.selectbox("Past Financial Stability (Proxy):", [0, 1], format_func=lambda x: "Stable (0)" if x == 0 else "Risky (1)", key='loan_status') 
-        # Calculate DTI based on input
+        
         loan_percent_income = loan_amnt / income if income > 0 else 0
         st.metric(label="Calculated Debt-to-Income (DTI) Ratio:", 
                   value=f"{loan_percent_income:.2f}",
-                  help="Total Debt Amount divided by Annual Income.")
+                  help="Total Debt Amount divided by Annual Income. A key factor in risk analysis.")
         
     st.markdown("---")
-    submitted = st.form_submit_button("Predict Financial Strategy")
+    submitted = st.form_submit_button("Get Personalized Strategy")
 
 
 # --- 5. PREDICTION AND DISPLAY ---
 if submitted:
     
+    # Ensure all 11 features are included in the user_data DataFrame
     user_data = pd.DataFrame([{
         'person_age': age,
         'person_income': income,
@@ -211,7 +233,10 @@ if submitted:
         'loan_amnt': loan_amnt,
         'loan_int_rate': loan_int_rate,
         'loan_percent_income': loan_percent_income,
-        'loan_status': loan_status
+        'loan_status': loan_status,
+        'loan_grade': loan_grade, # NEW
+        'cb_person_default_on_file': default_on_file, # NEW
+        'cb_person_cred_hist_length': cred_hist_length # NEW
     }])
     
     # Ensure columns match the model's feature order
@@ -239,8 +264,8 @@ if submitted:
             with col_pred:
                 st.markdown(f"""
                     <div class="container" style='border: 3px solid {advice_map['color']}; text-align:center;'>
-                        <p style='font-size:18px; color: #333; font-weight: bold;'>Predicted Primary Intent</p>
-                        <h1 style='font-size:40px; color: {advice_map['color']};'>{predicted_intent}</h1>
+                        <p style='font-size:18px; color: #333; font-weight: bold;'>Predicted Financial Profile</p>
+                        <h1 style='font-size:32px; color: {advice_map['color']};'>{advice_map['profile']}</h1>
                         <p>(Strategy is tailored to this predicted profile)</p>
                     </div>
                 """, unsafe_allow_html=True)
@@ -257,26 +282,31 @@ if submitted:
             
             st.subheader("📊 Key Metrics Snapshot")
             
-            col_metric_1, col_metric_2 = st.columns(2)
+            col_metric_1, col_metric_2, col_metric_3 = st.columns(3)
             with col_metric_1:
                  st.metric(label="Debt-to-Income (DTI) Ratio", 
-                          value=f"{loan_percent_income:.2f}", 
-                          help="Total debt amount relative to your income.")
+                          value=f"{loan_percent_income:.2f}")
             with col_metric_2:
                 st.metric(label="Annual Debt Amount", 
                           value=f"${loan_amnt:,.0f}")
+            with col_metric_3:
+                 st.metric(label="Credit History Length", 
+                          value=f"{cred_hist_length} Years")
+
             
             # --- Multi-Bar Confidence Graph ---
-            st.subheader("Model Confidence Breakdown: All Predicted Intents")
+            st.subheader("Model Confidence Breakdown: All Predicted Profiles")
             
-            # Create DataFrame for the chart showing all classes
+            # Map model classes (DEBTCONSOLIDATION, etc.) to simplified profile names
+            profile_names = [INTENT_ADVICE[c]['profile'] for c in model.classes_]
+            
             prob_df = pd.DataFrame({
-                'Predicted Intent': model.classes_,
+                'Predicted Profile': profile_names,
                 'Confidence': probabilities
             })
             
             # Sort for better visualization and ensure all intents are visible
-            prob_df = prob_df.set_index('Predicted Intent').sort_values('Confidence', ascending=False)
+            prob_df = prob_df.set_index('Predicted Profile').sort_values('Confidence', ascending=False)
             
             st.bar_chart(prob_df, y='Confidence')
             # --- END Multi-Bar Graph ---
