@@ -5,40 +5,6 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import numpy as np
-import requests
-from streamlit_lottie import st_lottie
-
-# --- LOTTIE ANIMATION HELPERS ---
-
-def load_lottieurl(url: str):
-    """Fetches Lottie JSON data from a URL."""
-    try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except Exception:
-        # Handle connection errors gracefully without crashing the app
-        return None
-
-@st.cache_resource
-def load_lottie_animations():
-    """Caches both the loading and success Lottie animations."""
-    
-    # 1. Loading/Analysis Animation (used while calculating)
-    LOTTIE_ANALYSIS_URL = "https://lottie.host/17498c19-75a0-43a7-89b3-ec3199859a0f/94178xN69F.json"
-    analysis_animation = load_lottieurl(LOTTIE_ANALYSIS_URL)
-
-    # 2. Success/Checkmark Animation (used after results are displayed)
-    # A professional checkmark animation
-    LOTTIE_SUCCESS_URL = "https://lottie.host/6f02a3a5-1d0e-4340-9b4e-862d6d03d4c8/Gf03u69YF8.json"
-    success_animation = load_lottieurl(LOTTIE_SUCCESS_URL)
-
-    return analysis_animation, success_animation
-
-lottie_analysis, lottie_success = load_lottie_animations()
-
-# --- 1. APP CONFIGURATION AND STYLING 🎨 ---
 
 st.set_page_config(page_title="Robo-Advisor: Financial Profile Analysis", page_icon="📈", layout="centered")
 
@@ -73,8 +39,6 @@ st.markdown("""
 st.title("📈 AI-Powered Financial Profile Advisor")
 st.write("Get personalized financial strategy advice based on your profile.")
 
-
-# --- 2. CONTEXTUAL ADVICE MAPPING (Strategy Database) ---
 FINANCIAL_ADVICE = {
     'Professional': {
         'title': "Growth-Focused Investment Strategy (Balanced to Aggressive)",
@@ -103,9 +67,6 @@ FINANCIAL_ADVICE = {
     }
 }
 
-
-# --- 3. MODEL TRAINING AND CACHING 🧠 ---
-
 @st.cache_resource
 def train_and_cache_model():
     FILE_NAME = 'data.csv'
@@ -117,7 +78,6 @@ def train_and_cache_model():
     ]
 
     try:
-        # Assuming 'data.csv' is accessible in the environment
         df = pd.read_csv(FILE_NAME)
     except FileNotFoundError:
         st.error(f"Error: Data file '{FILE_NAME}' not found. Please ensure it is in the same directory.")
@@ -154,9 +114,6 @@ def train_and_cache_model():
 
 model, model_features, full_data = train_and_cache_model()
 
-
-# --- 4. USER INPUT FORM 📋 ---
-
 with st.form("advisor_form", clear_on_submit=False):
     st.subheader("Tell us about your Financial Profile")
 
@@ -174,22 +131,11 @@ with st.form("advisor_form", clear_on_submit=False):
         
         disposable_income = income - (rent * 12) - (loan_repayment * 12)
         
-        # FIX: Using single '$' for currency display
         st.metric("Estimated Annual Disposable Income:", f"$ {disposable_income:,.2f}", help="This is used by the model for classification.")
         
     submitted = st.form_submit_button("Get Personalized Strategy")
 
-
-# --- 5. PREDICTION AND DISPLAY 📊 ---
-
 if submitted:
-    
-    # 5a. Show Lottie analysis animation during calculation
-    if lottie_analysis:
-        # Using columns to center the animation and make it prominent
-        anim_col1, anim_col2, anim_col3 = st.columns([1, 2, 1])
-        with anim_col2:
-            st_lottie(lottie_analysis, height=200, key="analysis_animation", speed=1, loop=True)
     
     with st.spinner("Analyzing your financial profile and generating strategy..."):
         
@@ -212,7 +158,6 @@ if submitted:
             
             advice_map = FINANCIAL_ADVICE.get(predicted_occupation, FINANCIAL_ADVICE['Other'])
 
-            # Add a clear separator or markdown to indicate the transition from analysis to results
             st.markdown("---")
             
             st.subheader("✅ Strategy Generation Complete!")
@@ -239,9 +184,7 @@ if submitted:
             st.subheader("Confidence Scores Visualized")
             st.bar_chart(prob_df, x='Predicted Occupation', y='Confidence')
             
-            # CELEBRATION: Show Lottie Success/Checkmark animation after the results are fully displayed
-            if lottie_success:
-                st_lottie(lottie_success, height=100, key="final_success_animation", loop=False, speed=1)
+            st.balloons()
             
         except Exception as e:
             st.error(f"Prediction error: {e}")
