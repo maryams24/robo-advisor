@@ -9,8 +9,8 @@ import numpy as np
 
 FILE_NAME = 'data.csv' 
 TARGET_COLUMN = 'Occupation' 
-# OPTIMIZATION: Drastically reduced sample size for faster startup
-NUM_SAMPLES = 5000 
+# The sample size limit (NUM_SAMPLES) has been removed. 
+# The application now uses ALL available rows for training.
 
 PROFILE_ADVICE = {
     'Professional': {
@@ -79,8 +79,7 @@ def load_and_clean_data(file_name):
     
     df = df.dropna()
     
-    if len(df) > NUM_SAMPLES:
-        df = df.sample(n=NUM_SAMPLES, random_state=42)
+    # Sampling logic removed to use the full dataset for maximum accuracy.
     
     return df, FEATURES
 
@@ -117,6 +116,7 @@ def train_and_cache_model(df, features, target_column):
         remainder='passthrough'
     )
 
+    # Multi-Layer Perceptron (Neural Network) Classifier
     deep_learning_model = MLPClassifier(
         # OPTIMIZED: Simplified architecture for faster training
         hidden_layer_sizes=(50, 25, 10), 
@@ -175,7 +175,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("📈 Robo Advisor for Personal finance and Budgeting")
+st.title("📈 Robo Advisor for Personal Finance and Budgeting (Neural Network / Full Data)")
 st.write("Enter your monthly budget to get personalized advice on where to cut spending and maximize your savings rate.")
 
 with st.form("savings_advisor_form", clear_on_submit=False):
@@ -225,7 +225,7 @@ if submitted:
     
     user_data = user_data[model_features]
 
-    with st.spinner("Analyzing spending profile using Neural Network and generating savings strategy..."):
+    with st.spinner("Analyzing spending profile using **Neural Network (MLPClassifier)** on **Full Dataset** and generating savings strategy..."):
         
         try:
             probabilities = model.predict_proba(user_data)[0]
@@ -297,5 +297,3 @@ if submitted:
             
         except Exception as e:
             st.error(f"Prediction error: Could not process input. Please ensure all number fields are valid. Detailed error: {e}")
-            
-
